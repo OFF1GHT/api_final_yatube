@@ -8,17 +8,13 @@ from posts.models import Comment
 
 @pytest.mark.django_db(transaction=True)
 class TestCommentAPI:
-
     TEXT_FOR_COMMENT = 'Новый комментарий'
     comments_url = '/api/v1/posts/{post_id}/comments/'
-    comment_detail_url = (
-        '/api/v1/posts/{post_id}/comments/{comment_id}/'
-    )
+    comment_detail_url = '/api/v1/posts/{post_id}/comments/{comment_id}/'
 
-    def check_comment_data(self,
-                           response_data,
-                           request_method_and_url,
-                           db_comment=None):
+    def check_comment_data(
+        self, response_data, request_method_and_url, db_comment=None
+    ):
         expected_fields = ('id', 'text', 'author', 'post', 'created')
         for field in expected_fields:
             assert field in response_data, (
@@ -40,16 +36,15 @@ class TestCommentAPI:
             )
 
     def test_comments_not_authenticated(self, client, post):
-        response = client.get(
-            self.comments_url.format(post_id=post.id)
-        )
+        response = client.get(self.comments_url.format(post_id=post.id))
         assert response.status_code == HTTPStatus.OK, (
             'Проверьте, что GET-запрос неавторизованного пользователя к '
             f'`{self.comments_url}` возвращает ответ со статусом 200.'
         )
 
-    def test_comment_single_not_authenticated(self, client, post,
-                                              comment_1_post):
+    def test_comment_single_not_authenticated(
+        self, client, post, comment_1_post
+    ):
         response = client.get(
             self.comment_detail_url.format(
                 post_id=post.id, comment_id=comment_1_post.id
@@ -61,9 +56,7 @@ class TestCommentAPI:
         )
 
     def test_comments_not_found(self, user_client, post):
-        response = user_client.get(
-            self.comments_url.format(post_id=post.id)
-        )
+        response = user_client.get(self.comments_url.format(post_id=post.id))
         assert response.status_code != HTTPStatus.NOT_FOUND, (
             f'Эндпоинт `{self.comments_url}` не найден, проверьте настройки в '
             '*urls.py*.'
@@ -80,11 +73,15 @@ class TestCommentAPI:
             'настройки в *urls.py*.'
         )
 
-    def test_comments_get(self, user_client, post, comment_1_post,
-                          comment_2_post, comment_1_another_post):
-        response = user_client.get(
-            self.comments_url.format(post_id=post.id)
-        )
+    def test_comments_get(
+        self,
+        user_client,
+        post,
+        comment_1_post,
+        comment_2_post,
+        comment_1_another_post,
+    ):
+        response = user_client.get(self.comments_url.format(post_id=post.id))
         assert response.status_code == HTTPStatus.OK, (
             'Проверьте, что при GET-запросе авторизованного пользователя к '
             f'`{self.comments_url}` возвращается ответ со статусом 200.'
@@ -105,7 +102,7 @@ class TestCommentAPI:
         self.check_comment_data(
             test_comment,
             f'GET-запросе к `{self.comments_url}`',
-            db_comment=comment
+            db_comment=comment,
         )
 
     def test_comment_create_by_unauth(self, client, post, comment_1_post):
@@ -118,12 +115,12 @@ class TestCommentAPI:
         data = {'text': self.TEXT_FOR_COMMENT}
         try:
             response = client.post(
-                self.comments_url.format(post_id=post.id),
-                data=data
+                self.comments_url.format(post_id=post.id), data=data
             )
         except ValueError as error:
             raise AssertionError(
-                assert_msg + (
+                assert_msg
+                + (
                     '\nВ процессе выполнения запроса произошла ошибка: '
                     f'{error}'
                 )
@@ -135,8 +132,9 @@ class TestCommentAPI:
             'комментарий.'
         )
 
-    def test_comments_post_auth_with_valid_data(self, user_client, post,
-                                                user, another_user):
+    def test_comments_post_auth_with_valid_data(
+        self, user_client, post, user, another_user
+    ):
         comments_count = Comment.objects.count()
 
         assert_msg = (
@@ -147,14 +145,12 @@ class TestCommentAPI:
         data = {'text': self.TEXT_FOR_COMMENT}
         try:
             response = user_client.post(
-                self.comments_url.format(post_id=post.id),
-                data=data
+                self.comments_url.format(post_id=post.id), data=data
             )
         except IntegrityError as error:
             raise AssertionError(
-                assert_msg + (
-                    f' В процессе выполнения запроса произошла ошибка: {error}'
-                )
+                assert_msg
+                + (f' В процессе выполнения запроса произошла ошибка: {error}')
             )
         assert response.status_code == HTTPStatus.CREATED, assert_msg
 
@@ -170,8 +166,7 @@ class TestCommentAPI:
             'комментария в неизменном виде.'
         )
         self.check_comment_data(
-            test_data,
-            f'POST-запросе к `{self.comments_url}`'
+            test_data, f'POST-запросе к `{self.comments_url}`'
         )
 
         assert test_data.get('author') == user.username, (
@@ -188,8 +183,7 @@ class TestCommentAPI:
         comments_count = Comment.objects.count()
 
         response = user_client.post(
-            self.comments_url.format(post_id=post.id),
-            data={}
+            self.comments_url.format(post_id=post.id), data={}
         )
         assert response.status_code == HTTPStatus.BAD_REQUEST, (
             'Проверьте, что POST-запрос с некорректными данными от '
@@ -203,8 +197,7 @@ class TestCommentAPI:
 
     def test_comment_author_and_post_are_read_only(self, user_client, post):
         response = user_client.post(
-            self.comments_url.format(post_id=post.id),
-            data={}
+            self.comments_url.format(post_id=post.id), data={}
         )
         assert response.status_code == HTTPStatus.BAD_REQUEST, (
             'Проверьте, что POST-запрос с некорректными данными от '
@@ -217,8 +210,9 @@ class TestCommentAPI:
             '`author` и `post` установлен свойство "Только для чтения".'
         )
 
-    def test_comment_id_auth_get(self, user_client, post,
-                                 comment_1_post, user):
+    def test_comment_id_auth_get(
+        self, user_client, post, comment_1_post, user
+    ):
         response = user_client.get(
             self.comment_detail_url.format(
                 post_id=post.id, comment_id=comment_1_post.id
@@ -247,18 +241,15 @@ class TestCommentAPI:
         )
 
     @pytest.mark.parametrize('http_method', ('put', 'patch'))
-    def test_comment_change_by_auth_with_valid_data(self,
-                                                    user_client,
-                                                    post,
-                                                    comment_1_post,
-                                                    comment_2_post,
-                                                    http_method):
+    def test_comment_change_by_auth_with_valid_data(
+        self, user_client, post, comment_1_post, comment_2_post, http_method
+    ):
         request_func = getattr(user_client, http_method)
         response = request_func(
             self.comment_detail_url.format(
                 post_id=post.id, comment_id=comment_1_post.id
             ),
-            data={'text': self.TEXT_FOR_COMMENT}
+            data={'text': self.TEXT_FOR_COMMENT},
         )
         http_method = http_method.upper()
         assert response.status_code == HTTPStatus.OK, (
@@ -287,21 +278,19 @@ class TestCommentAPI:
             request_method_and_url=(
                 f'{http_method}-запросе к {self.comment_detail_url}'
             ),
-            db_comment=db_comment
+            db_comment=db_comment,
         )
 
     @pytest.mark.parametrize('http_method', ('put', 'patch'))
-    def test_comment_change_not_auth_with_valid_data(self,
-                                                     client,
-                                                     post,
-                                                     comment_1_post,
-                                                     http_method):
+    def test_comment_change_not_auth_with_valid_data(
+        self, client, post, comment_1_post, http_method
+    ):
         request_func = getattr(client, http_method)
         response = request_func(
             self.comment_detail_url.format(
                 post_id=post.id, comment_id=comment_1_post.id
             ),
-            data={'text': self.TEXT_FOR_COMMENT}
+            data={'text': self.TEXT_FOR_COMMENT},
         )
         http_method = http_method.upper()
         assert response.status_code == HTTPStatus.UNAUTHORIZED, (
@@ -316,8 +305,7 @@ class TestCommentAPI:
             'комментарий.'
         )
 
-    def test_comment_delete_by_author(self, user_client,
-                                      post, comment_1_post):
+    def test_comment_delete_by_author(self, user_client, post, comment_1_post):
         response = user_client.delete(
             self.comment_detail_url.format(
                 post_id=post.id, comment_id=comment_1_post.id
@@ -335,8 +323,9 @@ class TestCommentAPI:
             f'`{self.comment_detail_url}` удаляет комментарий.'
         )
 
-    def test_comment_delete_by_not_author(self, user_client,
-                                          post, comment_2_post):
+    def test_comment_delete_by_not_author(
+        self, user_client, post, comment_2_post
+    ):
         response = user_client.delete(
             self.comment_detail_url.format(
                 post_id=post.id, comment_id=comment_2_post.id

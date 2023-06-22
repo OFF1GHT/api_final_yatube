@@ -25,6 +25,7 @@ def another_user(django_user_model):
 @pytest.fixture
 def token(user):
     from rest_framework_simplejwt.tokens import RefreshToken
+
     refresh = RefreshToken.for_user(user)
 
     return {
